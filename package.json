@@ -9,7 +9,11 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@iterable/react-native-sdk": "^1.3.17",
     "expo": "~49.0.13",
+    "expo-constants": "~14.4.2",
+    "expo-device": "~5.4.0",
+    "expo-notifications": "~0.20.1",
     "expo-status-bar": "~1.6.0",
     "react": "18.2.0",
     "react-native": "0.72.5"

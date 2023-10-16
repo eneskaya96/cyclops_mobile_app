@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "cyclops_mobile_app",
-    "slug": "cyclops_mobile_app",
+    "slug": "cyclops",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,7 +15,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.eneskaya95.cyclops"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +26,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4b41c80a-2e95-421a-bf0e-3f2689ca18e4"
+      }
+    },
+    "owner": "eneskaya95"
   }
 }
