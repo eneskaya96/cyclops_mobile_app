@@ -4,6 +4,8 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
+import { ENDPOINT } from '../../constant';
+
 export async function registerForPushNotificationsAsync() {
     let token;
   
@@ -38,10 +40,9 @@ export async function registerForPushNotificationsAsync() {
   }
 
   export async function sendTokenToBackend(token) {
-    const LOCAL_IP = '192.168.1.22';
     try {
     
-        const response = await fetch(`http://${LOCAL_IP}:5000/api/save-token`, {
+        const response = await fetch(`${ENDPOINT}/api/save-token`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
