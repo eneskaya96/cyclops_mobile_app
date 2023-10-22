@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, FlatList, TouchableOpacity } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, RefreshControl, FlatList, TouchableOpacity } from 'react-native';
 import { useSocket } from '../services/socketProvider'; 
 import axios from 'axios';
 import { ENDPOINT } from '../../constant';
@@ -7,14 +7,46 @@ import { ENDPOINT } from '../../constant';
 
 export const PanelComponent = ({selectedMenu}) => {
   const socket = useSocket();
-  const [images, setImages] = useState([]);
+  const [detectedPersons, setDetectedPersons] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Yenileme işlemi sırasında çalışacak fonksiyon
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    axios.get(`${ENDPOINT}/list_detected_images`)
+      .then(response => {
+        const sortedData = response.data.sort((a, b) => {
+          // Tarih stringlerini Date objelerine dönüştür
+          const dateA = new Date(a.detection_date);
+          const dateB = new Date(b.detection_date);
+
+          // Tarihleri karşılaştır ve sıralama yap
+          return dateB - dateA; // en yeni tarihlerden en eski tarihler sıralaması için
+          // eğer en eski tarihlerden en yeni tarihler sıralamasını istiyorsanız "dateA - dateB" kullanın.
+        });
+        setDetectedPersons(sortedData); // Yeni verilerle listeyi güncelle
+        setRefreshing(false); // Yenileme işlemini durdur
+      })
+      .catch(error => {
+        console.error("There was an error fetching the images", error);
+        setRefreshing(false); // Yenileme işlemini durdur
+      });
+  }, []);
   
 
   useEffect(() => {
-    axios.get(`${ENDPOINT}/list_images`)
+    axios.get(`${ENDPOINT}/list_detected_images`)
       .then(response => {
-        setImages(response.data);
+        const sortedData = response.data.sort((a, b) => {
+          // Tarih stringlerini Date objelerine dönüştür
+          const dateA = new Date(a.detection_date);
+          const dateB = new Date(b.detection_date);
+
+          // Tarihleri karşılaştır ve sıralama yap
+          return dateB - dateA; // en yeni tarihlerden en eski tarihler sıralaması için
+          // eğer en eski tarihlerden en yeni tarihler sıralamasını istiyorsanız "dateA - dateB" kullanın.
+        });
+        setDetectedPersons(sortedData);
       })
       .catch(error => {
         console.error("There was an error fetching the images", error);
@@ -24,13 +56,12 @@ export const PanelComponent = ({selectedMenu}) => {
   useEffect(() => {
     if (socket) {
         socket.on('new_detection', (newImages) => {
-            console.log('New detection', newImages.data);
-            setImages((prevImages) => [ ...newImages.data, ...prevImages]);
+          console.log("new_detection")
+          setDetectedPersons((prevImages) => [ ...newImages.data, ...prevImages]);
         });
         return () => socket.off("new_detection");
     }
   }, [socket]);
-
 
   if(selectedMenu !== 'DETECTIONS'){
     return (
@@ -41,20 +72,26 @@ export const PanelComponent = ({selectedMenu}) => {
   return (
     <View style={styles.container}>
         <FlatList
-            data={images}
+            data={detectedPersons}
             renderItem={({ item }) => (
             <TouchableOpacity onPress={() => console.log("PRESS")}>
                 <View style={styles.imageContainer}>
-                    <Image source={{ uri: `${ENDPOINT}/image/${item[0]}` }} style={styles.image} />
+                    <Image source={{ uri: `${ENDPOINT}/image/${item.url}.png` }} style={styles.image} />
                     <View style={styles.textContainer}>
-                        <Text style={styles.nameText}>Maximillian Max</Text>
+                        <Text style={styles.nameText}>{item.name}</Text>
                         <Text style={styles.groupText}>Default Camera Group</Text>
-                        { Math.random() > 0.5 && <Text style={styles.terroristText}>Terrorist</Text>}
-                        <Text style={styles.dateText}>22 May 2018 22:47:12</Text>
+                        {Boolean(item.thread) && <Text style={styles.terroristText}>Suspect</Text>}
+                        <Text style={styles.dateText}>{item.detection_date}</Text>
                     </View>
                 </View>
             </TouchableOpacity>
             )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+              />
+            }
             keyExtractor={(item) => item.id}
         />
     </View>
