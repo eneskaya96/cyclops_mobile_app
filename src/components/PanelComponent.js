@@ -1,58 +1,57 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, RefreshControl, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, RefreshControl, FlatList, TouchableOpacity, Modal } from 'react-native';
 import { useSocket } from '../services/socketProvider'; 
 import axios from 'axios';
 import { ENDPOINT } from '../../constant';
 
 
 export const PanelComponent = ({selectedMenu}) => {
-  const socket = useSocket();
+  const socket = useSocket(); // it will be used when socket bug fixed
+  const [gifModalVisible, setGifModalVisible] = useState(false);
+  const [currentGifUrl, setCurrentGifUrl] = useState(null); 
   const [detectedPersons, setDetectedPersons] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Yenileme işlemi sırasında çalışacak fonksiyon
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
+  const showGif = (item) => {
+    setCurrentGifUrl(`${ENDPOINT}/image/${item.url}.gif`); 
+    setGifModalVisible(true);
+  } 
+
+  const fetchDetectedImages = () => {
     axios.get(`${ENDPOINT}/list_detected_images`)
       .then(response => {
         const sortedData = response.data.sort((a, b) => {
-          // Tarih stringlerini Date objelerine dönüştür
           const dateA = new Date(a.detection_date);
           const dateB = new Date(b.detection_date);
-
-          // Tarihleri karşılaştır ve sıralama yap
-          return dateB - dateA; // en yeni tarihlerden en eski tarihler sıralaması için
-          // eğer en eski tarihlerden en yeni tarihler sıralamasını istiyorsanız "dateA - dateB" kullanın.
-        });
-        setDetectedPersons(sortedData); // Yeni verilerle listeyi güncelle
-        setRefreshing(false); // Yenileme işlemini durdur
-      })
-      .catch(error => {
-        console.error("There was an error fetching the images", error);
-        setRefreshing(false); // Yenileme işlemini durdur
-      });
-  }, []);
-  
-
-  useEffect(() => {
-    axios.get(`${ENDPOINT}/list_detected_images`)
-      .then(response => {
-        const sortedData = response.data.sort((a, b) => {
-          // Tarih stringlerini Date objelerine dönüştür
-          const dateA = new Date(a.detection_date);
-          const dateB = new Date(b.detection_date);
-
-          // Tarihleri karşılaştır ve sıralama yap
-          return dateB - dateA; // en yeni tarihlerden en eski tarihler sıralaması için
-          // eğer en eski tarihlerden en yeni tarihler sıralamasını istiyorsanız "dateA - dateB" kullanın.
+          return dateB - dateA; 
         });
         setDetectedPersons(sortedData);
+        setRefreshing(false);
       })
       .catch(error => {
         console.error("There was an error fetching the images", error);
+        setRefreshing(false); 
       });
+  };
+
+  const onRefresh = useCallback(() => {
+    console.log("resfres")
+    setRefreshing(true);
+    fetchDetectedImages();
+  }, []);
+  
+  useEffect(() => {
+    fetchDetectedImages(); 
+
+    const intervalId = setInterval(() => {
+      fetchDetectedImages(); 
+    }, 1000); 
+
+    return () => clearInterval(intervalId);
   }, []);
 
+  // it will be used when socket bug fixed
+  /*
   useEffect(() => {
     if (socket) {
         socket.on('new_detection', (newImages) => {
@@ -62,29 +61,31 @@ export const PanelComponent = ({selectedMenu}) => {
         return () => socket.off("new_detection");
     }
   }, [socket]);
+  */
 
-  if(selectedMenu !== 'DETECTIONS'){
+  const listItem = (item) => {
     return (
-        <View style={styles.emptyContainer}>
+      <TouchableOpacity onPress={() => showGif(item)}>
+        <View style={styles.imageContainer}>
+            <Image source={{ uri: `${ENDPOINT}/image/${item.url}.png` }} style={styles.image} />
+            <View style={styles.textContainer}>
+                <Text style={styles.nameText}>{item.name}</Text>
+                <Text style={styles.groupText}>Default Camera Group</Text>
+                {Boolean(item.thread) && <Text style={styles.suspectText}>Suspect</Text>}
+                <Text style={styles.dateText}>{item.detection_date}</Text>
+            </View>
         </View>
-    );
+    </TouchableOpacity> 
+    ); 
   }
-  return (
-    <View style={styles.container}>
+
+  const filteredViews = (filter) => {
+    return (
+      <View style={styles.container}>
         <FlatList
             data={detectedPersons}
             renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => console.log("PRESS")}>
-                <View style={styles.imageContainer}>
-                    <Image source={{ uri: `${ENDPOINT}/image/${item.url}.png` }} style={styles.image} />
-                    <View style={styles.textContainer}>
-                        <Text style={styles.nameText}>{item.name}</Text>
-                        <Text style={styles.groupText}>Default Camera Group</Text>
-                        {Boolean(item.thread) && <Text style={styles.terroristText}>Suspect</Text>}
-                        <Text style={styles.dateText}>{item.detection_date}</Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
+              filter == 'ALARMS' ?  item.thread && listItem(item) : listItem(item)
             )}
             refreshControl={
               <RefreshControl
@@ -94,8 +95,42 @@ export const PanelComponent = ({selectedMenu}) => {
             }
             keyExtractor={(item) => item.id}
         />
-    </View>
-   );
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={gifModalVisible}
+          onRequestClose={() => {
+            setGifModalVisible(false);  // Android'de geri düğmesine basıldığında modal'ı kapatabilirsiniz
+          }}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              {currentGifUrl && <Image source={{ uri: currentGifUrl }} style={styles.gifImage} />}
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose]}
+                onPress={() => setGifModalVisible(false)}
+              >
+                <Text style={styles.textStyle}>CLOSE</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  }
+
+  if(selectedMenu == 'DETECTIONS'){
+    return filteredViews();
+  }
+  else if(selectedMenu == 'ALARMS') {
+    return filteredViews('ALARMS');
+  }
+  else {
+    return (
+      <View style={styles.emptyContainer}>
+      </View>
+    );
+  }
 };
 
 const styles = StyleSheet.create({
@@ -140,7 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#c5c5c5',
   },
-  terroristText: {
+  suspectText: {
     marginTop: 5,
     fontSize: 15,
     color: 'white',
@@ -149,6 +184,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     borderRadius: 5,
     width:'100%'
-}
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "#194178",
+    padding: 15,
+    alignItems: "center",
+    shadowColor: "black",
+    width: '80%',
+    height: '60%',
+    borderWidth: 3, 
+    borderColor: '#E1AA74',
+    borderColor: 'black',
+    borderRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+  },
+  buttonClose: {
+    backgroundColor: "#2196F3",
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  gifImage: {
+    width: '80%',  
+    height: '85%',
+    marginBottom: 15,
+  },
 });
-

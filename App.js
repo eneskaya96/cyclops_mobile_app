@@ -1,11 +1,10 @@
-import { SafeAreaView, View, StyleSheet, Image, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity, Text } from 'react-native';
 import { NotificationComponent }  from './src/components/NotificationComponent'
 import FontAwesome from 'react-native-vector-icons/FontAwesome'; 
 import { useState } from 'react';
 
 import { PanelComponent } from './src/components/PanelComponent'
 import { SocketProvider } from './src/services/socketProvider';
-
 
 
 export default function App() {
@@ -24,6 +23,7 @@ export default function App() {
           <Menu setSelectedMenu={setSelectedMenu} selectedMenu={selectedMenu}/>
           <PanelComponent selectedMenu={selectedMenu} />
           <AddButton/>
+          <NotificationComponent/>
         </SocketProvider>
     </View>
   );
