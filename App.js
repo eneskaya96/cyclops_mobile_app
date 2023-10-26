@@ -63,7 +63,7 @@ const Header = () => (
     </TouchableOpacity>
     <View style={styles.logoContainer}>
       <Image
-        source={require('./assets/logo.png')}
+        source={require('./assets/white_logo.png')}
         style={styles.logo}
       />
     </View>
@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
   logo: {
     width: '100%',
     height: '100%',
+    resizeMode: 'contain', 
   },
   menuContainer: {
     backgroundColor: '#192655',
