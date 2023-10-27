@@ -21,6 +21,7 @@ export function NotificationComponent() {
   useEffect(() => {
     console.log("useEffect")
     registerForPushNotificationsAsync().then(token => {
+      console.log("token", token)
       setExpoPushToken(token);
       sendTokenToBackend(token); 
     });
