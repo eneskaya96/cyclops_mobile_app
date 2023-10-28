@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, RefreshControl, FlatList, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Image, RefreshControl, FlatList, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { useSocket } from '../services/socketProvider'; 
 import axios from 'axios';
 import { ENDPOINT } from '../../constant';
@@ -11,6 +11,7 @@ export const PanelComponent = ({selectedMenu}) => {
   const [currentGifUrl, setCurrentGifUrl] = useState(null); 
   const [detectedPersons, setDetectedPersons] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingGif, setLoadingGif] = useState(true);
 
   const showGif = (item) => {
     setCurrentGifUrl(`${ENDPOINT}/image/${item.url}.gif`); 
@@ -100,12 +101,24 @@ export const PanelComponent = ({selectedMenu}) => {
           transparent={true}
           visible={gifModalVisible}
           onRequestClose={() => {
-            setGifModalVisible(false);  // Android'de geri düğmesine basıldığında modal'ı kapatabilirsiniz
+            setGifModalVisible(false);
           }}
         >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
-              {currentGifUrl && <Image source={{ uri: currentGifUrl }} style={styles.gifImage} />}
+              <Image
+                source={{ uri: currentGifUrl }}
+                style={styles.gifImage}
+                onLoadStart={() => setLoadingGif(true)}
+                onLoad={() => setLoadingGif(false)} 
+                onError={(error) => {
+                  console.error('Image loading error: ', error);
+                  setLoadingGif(true); 
+                }}
+              />
+              {loadingGif && (
+                <ActivityIndicator size="large" color="#999999" style={styles.activityIndicator}/> 
+              ) }
               <TouchableOpacity
                 style={[styles.button, styles.buttonClose]}
                 onPress={() => setGifModalVisible(false)}
@@ -135,6 +148,9 @@ export const PanelComponent = ({selectedMenu}) => {
 
 const styles = StyleSheet.create({
     
+  activityIndicator: {
+    position: 'absolute',
+  },
   container: {
     flex: 1,
     width: '100%',
@@ -210,6 +226,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   button: {
     borderRadius: 20,
