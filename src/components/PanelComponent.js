@@ -3,9 +3,17 @@ import { View, Text, StyleSheet, Image, RefreshControl, FlatList, TouchableOpaci
 import { useSocket } from '../services/socketProvider'; 
 import axios from 'axios';
 import { ENDPOINT } from '../../constant';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs(['Warning: ...']);
+LogBox.ignoreLogs(['There was a problem sending']);
+
+LogBox.ignoreLogs(['There was an']);
+
+LogBox.ignoreLogs(['Cannot ']);
 
 
-export const PanelComponent = ({selectedMenu}) => {
+export const PanelComponent = ({selectedMenu}) => {  
   const socket = useSocket(); // it will be used when socket bug fixed
   const [gifModalVisible, setGifModalVisible] = useState(false);
   const [currentGifUrl, setCurrentGifUrl] = useState(null); 
@@ -22,10 +30,16 @@ export const PanelComponent = ({selectedMenu}) => {
     axios.get(`${ENDPOINT}/list_detected_images`)
       .then(response => {
         const sortedData = response.data.sort((a, b) => {
+          // Öncelikle 'thread' varlığına göre kontrol ediyoruz.
+          const threadCompare = b.thread - a.thread;
+          if (threadCompare !== 0) return threadCompare;
+
+          // Eğer her iki öğede de 'thread' özelliği aynıysa, tarih bilgisine göre sıralama yapılır.
           const dateA = new Date(a.detection_date);
           const dateB = new Date(b.detection_date);
           return dateB - dateA; 
         });
+        
         setDetectedPersons(sortedData);
         setRefreshing(false);
       })
@@ -70,7 +84,7 @@ export const PanelComponent = ({selectedMenu}) => {
         <View style={styles.imageContainer}>
             <Image source={{ uri: `${ENDPOINT}/image/${item.url}.png` }} style={styles.image} />
             <View style={styles.textContainer}>
-                <Text style={styles.nameText}>{item.name}</Text>
+                <Text style={styles.nameText}>{item.id}</Text>
                 <Text style={styles.groupText}>Default Camera Group</Text>
                 {Boolean(item.thread) && <Text style={styles.suspectText}>Suspect</Text>}
                 <Text style={styles.dateText}>{item.detection_date}</Text>
