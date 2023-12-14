@@ -16,23 +16,26 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eneskaya95.cyclops"
+      "bundleIdentifier": "com.spacture.ai"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.eneskaya95.cyclops"
+      "package": "com.spacture.ai"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "4b41c80a-2e95-421a-bf0e-3f2689ca18e4"
-      }
-    },
-    "owner": "eneskaya95"
+    "owner": "blueromans",
+    "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development",
+        }
+      ]
+    ]
   }
 }
